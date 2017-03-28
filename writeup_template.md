@@ -1,11 +1,5 @@
 #**Traffic Sign Recognition** 
 
-##Writeup Template
-
-###You can use this file as a template for your writeup if you want to submit it as a markdown file, but feel free to use some other method and submit a pdf if you prefer.
-
----
-
 **Build a Traffic Sign Recognition Project**
 
 The goals / steps of this project are the following:
@@ -19,14 +13,15 @@ The goals / steps of this project are the following:
 
 [//]: # (Image References)
 
-[image1]: ./examples/visualization.jpg "Visualization"
-[image2]: ./examples/grayscale.jpg "Grayscaling"
-[image3]: ./examples/random_noise.jpg "Random Noise"
-[image4]: ./examples/placeholder.png "Traffic Sign 1"
-[image5]: ./examples/placeholder.png "Traffic Sign 2"
-[image6]: ./examples/placeholder.png "Traffic Sign 3"
-[image7]: ./examples/placeholder.png "Traffic Sign 4"
-[image8]: ./examples/placeholder.png "Traffic Sign 5"
+[image1]: ./writeup_images/visualization.png "Visualization"
+[image2]: ./writeup_images/random_image.png "Random Image"
+[image3]: ./writeup_images/random_rotated.png "Random Image Rotated"
+[image4]: ./writeup_images/random_rotated_translated.png "Random Rotated Image Translated"
+[image5]: ./writeup_images/augmented_visualization.png "Augmented Visualization"
+[image6]: ./writeup_images/random_image_grayscale.png "Random Image Grayscaling"
+[image7]: ./examples/random_noise.jpg "Random Noise"
+[image8]: ./examples/placeholder.png "Traffic Sign 1"
+
 
 ## Rubric Points
 ###Here I will consider the [rubric points](https://review.udacity.com/#!/rubrics/481/view) individually and describe how I addressed each point in my implementation.  
@@ -34,9 +29,7 @@ The goals / steps of this project are the following:
 ---
 ###Writeup / README
 
-####1. Provide a Writeup / README that includes all the rubric points and how you addressed each one. You can submit your writeup as markdown or pdf. You can use this template as a guide for writing the report. The submission includes the project code.
-
-You're reading it! and here is a link to my [project code](https://github.com/udacity/CarND-Traffic-Sign-Classifier-Project/blob/master/Traffic_Sign_Classifier.ipynb)
+You're reading it! and here is a link to my [project code](https://github.com/jmolsen/CarND-Traffic-Sign-Classifier-Project/blob/master/Traffic_Sign_Classifier.ipynb)
 
 ###Data Set Summary & Exploration
 
@@ -44,76 +37,99 @@ You're reading it! and here is a link to my [project code](https://github.com/ud
 
 The code for this step is contained in the second code cell of the IPython notebook.  
 
-I used the pandas library to calculate summary statistics of the traffic
+I used the standard python to calculate summary statistics of the traffic
 signs data set:
 
-* The size of training set is ?
-* The size of test set is ?
-* The shape of a traffic sign image is ?
-* The number of unique classes/labels in the data set is ?
+* The size of training set is 34799
+* The size of test set is 12630
+* The size of the validation set is 4410
+* The shape of a traffic sign image is (32, 32, 3)
+* The number of unique classes/labels in the data set is 43
 
 ####2. Include an exploratory visualization of the dataset and identify where the code is in your code file.
 
 The code for this step is contained in the third code cell of the IPython notebook.  
 
-Here is an exploratory visualization of the data set. It is a bar chart showing how the data ...
+Here is an exploratory visualization of the data set. It is a bar chart showing how many examples of each traffic sign classification exist in the training set.
 
-![alt text][image1]
+![Data Visualization][image1]
+
 
 ###Design and Test a Model Architecture
 
-####1. Describe how, and identify where in your code, you preprocessed the image data. What tecniques were chosen and why did you choose these techniques? Consider including images showing the output of each preprocessing technique. Pre-processing refers to techniques such as converting to grayscale, normalization, etc.
+####1. Describe how, and identify where in your code, you preprocessed the image data. What techniques were chosen and why did you choose these techniques? Consider including images showing the output of each preprocessing technique. Pre-processing refers to techniques such as converting to grayscale, normalization, etc.
 
-The code for this step is contained in the fourth code cell of the IPython notebook.
+The code for this step is contained in the fourth through eighth code cells of the IPython notebook.
 
-As a first step, I decided to convert the images to grayscale because ...
+First, in the fourth code cell, I defined some functions to randomly rotate and translate images to be used later to augment the data. I'll discuss that more in the next section.
+
+Next, in the fifth, sixth, and seventh code cells, I handled data augmentation which I'll talk about more in the next section.
+
+I wanted to handle the data augmentation before the image preprocessing so that I could preprocess all the images at once.
+
+Finally, in the eighth code cell, I converted the images to grayscale and ran min-max scaling on them.  In some of my earlier versions I was using the RGB images, but thought that I might be making it too complicated.  I thought that since signs should be recognizable mostly by their shape and symbols and in varying lighting conditions that it would better to try to learn them as normalized grayscale.
 
 Here is an example of a traffic sign image before and after grayscaling.
+![Random Image Before Grayscaling][image2]
+![Random Image After Grayscaling][image6]
 
-![alt text][image2]
-
-As a last step, I normalized the image data because ...
 
 ####2. Describe how, and identify where in your code, you set up training, validation and testing data. How much data was in each set? Explain what techniques were used to split the data into these sets. (OPTIONAL: As described in the "Stand Out Suggestions" part of the rubric, if you generated additional data for training, describe why you decided to generate additional data, how you generated the data, identify where in your code, and provide example images of the additional data)
 
-The code for splitting the data into training and validation sets is contained in the fifth code cell of the IPython notebook.  
+First, in the fourth code cell, I defined some functions to randomly rotate and translate images to be used later to augment the data.  I didn't want to rotate or translate them too much, but just enough to get slightly different images.  So, I randomly rotated between -15 and 15 degrees, and I randomly translated both horizontally and vertically between -5 and 5 pixels.
 
-To cross validate my model, I randomly split the training data into a training set and validation set. I did this by ...
+Using a randomly chosen sample image (pictured first), I printed out examples of a random rotation of the sample image and then a random translation of the rotated image.
 
-My final training set had X number of images. My validation set and test set had Y and Z number of images.
+![Random Image Before Rotatation and Translation][image2]
+![Random Image Rotated][image3]
+![Random Rotated Image Translated][image4]
 
-The sixth code cell of the IPython notebook contains the code for augmenting the data set. I decided to generate additional data because ... To add more data to the the data set, I used the following techniques because ... 
+In the fifth code cell, I augmented the given training data so that every class had at least 2000 training images.  I decided to augment the data because there was a huge disparity in how many images existed for each class.  Some classes only had a couple hundred images whereas others had a thousand or two.  For the classes with too few examples I was concerned that it might cause those classes to overfit.  
+So, I randomly chose images for each class and then applied the random rotation and translation functions from above to create new images to add to the training set.  The total size of the training set after augmentation was 86010.
 
-Here is an example of an original image and an augmented image:
+I printed another bar graph as before, confirming that that each class had met enough augmented images to meet the minimum of 2000.
 
-![alt text][image3]
+![Augmented Visualization][image5]
 
-The difference between the original data set and the augmented data set is the following ... 
+In the sixth code cell, I pickled the augmented data.  And in the seventh code cell, I loaded the pickled augmented data so I didn't have to run the augmentation every time.
+In the ninth code cell, I shuffled the training data.
+
+For the validation and testing data I just used what was given.
+
+My final training set had 86010 images. My validation set and test set had 4410 and 12630 images respectively.
 
 
 ####3. Describe, and identify where in your code, what your final model architecture looks like including model type, layers, layer sizes, connectivity, etc.) Consider including a diagram and/or table describing the final model.
 
-The code for my final model is located in the seventh cell of the ipython notebook. 
+The code for my final model is located in the tenth cell of the ipython notebook. 
 
 My final model consisted of the following layers:
 
 | Layer         		|     Description	        					| 
 |:---------------------:|:---------------------------------------------:| 
-| Input         		| 32x32x3 RGB image   							| 
-| Convolution 3x3     	| 1x1 stride, same padding, outputs 32x32x64 	|
+| Input         		| 32x32x1 normalized grayscale image  			| 
+| Convolution 5x5     	| 1x1 stride, valid padding, outputs 28x28x9 	|
 | RELU					|												|
-| Max pooling	      	| 2x2 stride,  outputs 16x16x64 				|
-| Convolution 3x3	    | etc.      									|
-| Fully connected		| etc.        									|
-| Softmax				| etc.        									|
-|						|												|
-|						|												|
+| Dropout				| Using convolutional keep probablity 			|
+| Max pooling	      	| 2x2 stride,  outputs 14x14x9  				|
+| Convolution 5x5     	| 1x1 stride, valid padding, outputs 10x10x24 	|
+| RELU					|												|
+| Dropout				| Using convolutional keep probablity 			|
+| Max pooling   		| 2x2 stride,  outputs 5x5x24   				|
+| Flatten       	    | outputs 600  									|
+| Fully connected		| outputs 180 									|
+| RELU					|												|
+| Dropout				|Using keep probablity              			|
+| Fully connected		| outputs 126 									|
+| RELU					|												|
+| Dropout				|Using keep probablity              			|
+| Fully connected		| outputs 43 									|
  
 
 
 ####4. Describe how, and identify where in your code, you trained your model. The discussion can include the type of optimizer, the batch size, number of epochs and any hyperparameters such as learning rate.
 
-The code for training the model is located in the eigth cell of the ipython notebook. 
+The code for training the model is located in the eleventh cell of the ipython notebook. 
 
 To train the model, I used an ....
 
