@@ -131,15 +131,15 @@ print("Augmenting Data...")
 min_class_count = 2000
 for i,class_count in enumerate(classes_counts):
     if (class_count < min_class_count):
+        new_image_count = 0
         curr_class = classes[i]
         class_indexes = [j for j,image_class in enumerate(y_train) if image_class == curr_class]
-        new_image_count = 0
         while (new_image_count < min_class_count - class_count):
             random_index = class_indexes[random.randint(0, len(class_indexes)-1)]
             X_train = np.append(X_train, [randomly_translate_image(randomly_rotate_image(X_train[random_index]))], axis=0) 
             y_train = np.append(y_train, [curr_class], axis=0)
             new_image_count += 1
-
+        print('Added {} images for class {}'.format(new_image_count, curr_class))
 
 n_train = len(X_train)
 classes, classes_counts = np.unique(y_train, return_counts=True)
@@ -185,11 +185,12 @@ from tensorflow.contrib.layers import flatten
 def ConvNet(x):    
     # Arguments used for tf.truncated_normal, randomly defines variables for the weights and biases for each layer
     mu = 0
-    sigma = 0.2
+    sigma = 0.1
     
     layer_width = {
-        'layer_1': 6,
-        'layer_2': 16,
+        'layer_1': 18,
+        'layer_2': 48,
+        'layer_3': 100,
         'fully_connected_1': 120,
         'fully_connected_2': 84,
         'output': 43
@@ -200,8 +201,10 @@ def ConvNet(x):
             shape = [5, 5, 3, layer_width['layer_1']], mean = mu, stddev = sigma)),
         'layer_2': tf.Variable(tf.truncated_normal(
             shape = [5, 5, layer_width['layer_1'], layer_width['layer_2']], mean = mu, stddev = sigma)),
+        'layer_3': tf.Variable(tf.truncated_normal(
+            shape = [5, 5, layer_width['layer_2'], layer_width['layer_3']], mean = mu, stddev = sigma)),
         'fully_connected_1': tf.Variable(tf.truncated_normal(
-            shape = [5*5*layer_width['layer_2'], layer_width['fully_connected_1']], mean = mu, stddev = sigma)),
+            shape = [5*5*layer_width['layer_3'], layer_width['fully_connected_1']], mean = mu, stddev = sigma)),
         'fully_connected_2': tf.Variable(tf.truncated_normal(
             shape = [layer_width['fully_connected_1'], layer_width['fully_connected_2']], mean = mu, stddev = sigma)),
         'output': tf.Variable(tf.truncated_normal(
@@ -211,6 +214,7 @@ def ConvNet(x):
     biases = {
         'layer_1': tf.Variable(tf.zeros(layer_width['layer_1'])),
         'layer_2': tf.Variable(tf.zeros(layer_width['layer_2'])),
+        'layer_3': tf.Variable(tf.zeros(layer_width['layer_3'])),
         'fully_connected_1': tf.Variable(tf.zeros(layer_width['fully_connected_1'])),
         'fully_connected_2': tf.Variable(tf.zeros(layer_width['fully_connected_2'])),
         'output': tf.Variable(tf.zeros(layer_width['output']))
@@ -223,34 +227,43 @@ def ConvNet(x):
     convolutional_keep_prob = 0.7
     fully_connected_keep_prob = 0.5
     
-    # Layer 1: Convolutional. Input = 32x32x3. Output = 28x28x6.
+    # Layer 1: Convolutional. Input = 32x32x3. Output = 28x28x18.
     layer1 = tf.nn.conv2d(x, weights['layer_1'], filter_strides, padding) + biases['layer_1']
     layer1 = tf.nn.relu(layer1)
     layer1 = tf.nn.dropout(layer1, convolutional_keep_prob)
-    # Pooling. Input = 28x28x6. Output = 14x14x6.
-    layer1 = tf.nn.max_pool(layer1, ksize, pooling_strides, padding)
+    # Pooling. Input = 28x28x18. Output = 14x14x18.
+    #layer1 = tf.nn.max_pool(layer1, ksize, pooling_strides, padding)
 
-    # Layer 2: Convolutional. Output = 10x10x16.
+    # Layer 2: Convolutional. Output = 10x10x48.
+    #24x24x48
     layer2 = tf.nn.conv2d(layer1, weights['layer_2'], filter_strides, padding) + biases['layer_2']
     layer2 = tf.nn.relu(layer2)
     layer2 = tf.nn.dropout(layer2, convolutional_keep_prob)
+    # Pooling. Input = 10x10x16. Output = 5x5x48.
+    #layer2 = tf.nn.max_pool(layer2, ksize, pooling_strides, padding)
+    
+    # Layer 3: Convolutional. Output = 6x6x16.
+    #20x20x100
+    layer3 = tf.nn.conv2d(layer2, weights['layer_3'], filter_strides, padding) + biases['layer_3']
+    layer3 = tf.nn.relu(layer3)
+    layer3 = tf.nn.dropout(layer3, convolutional_keep_prob)
     # Pooling. Input = 10x10x16. Output = 5x5x16.
-    layer2 = tf.nn.max_pool(layer2, ksize, pooling_strides, padding)
+    #layer3 = tf.nn.max_pool(layer3, ksize, pooling_strides, padding)
 
     # Flatten. Input = 5x5x16. Output = 400.
-    layer2_flat = tf.reshape(layer2, [-1, 5*5*layer_width['layer_2']])
+    layer3_flat = tf.reshape(layer3, [-1, 5*5*layer_width['layer_3']])
     
-    # Layer 3: Fully Connected. Input = 400. Output = 120.
-    fully_connected1 = tf.add(tf.matmul(layer2_flat, weights['fully_connected_1']), biases['fully_connected_1'])
+    # Layer 4: Fully Connected. Input = 400. Output = 120.
+    fully_connected1 = tf.add(tf.matmul(layer3_flat, weights['fully_connected_1']), biases['fully_connected_1'])
     fully_connected1 = tf.nn.relu(fully_connected1)
     fully_connected1 = tf.nn.dropout(fully_connected1, fully_connected_keep_prob)
 
-    # Layer 4: Fully Connected. Input = 120. Output = 84.
+    # Layer 5: Fully Connected. Input = 120. Output = 84.
     fully_connected2= tf.add(tf.matmul(fully_connected1, weights['fully_connected_2']), biases['fully_connected_2'])
     fully_connected2 = tf.nn.relu(fully_connected2)
     fully_connected2 = tf.nn.dropout(fully_connected2, fully_connected_keep_prob)
 
-    # Layer 5: Fully Connected. Input = 84. Output = 10.
+    # Layer 6: Fully Connected. Input = 84. Output = 10.
     logits = tf.add(tf.matmul(fully_connected2, weights['output']), biases['output'])
     
     return logits
@@ -311,7 +324,7 @@ with tf.Session() as sess:
             batch_x, batch_y = X_train[offset:end], y_train[offset:end]
             sess.run(training_operation, feed_dict={x: batch_x, y: batch_y})
             
-        validation_accuracy = evaluate(X_validation, y_validation)
+        validation_accuracy = evaluate(X_valid, y_valid)
         print("EPOCH {} ...".format(i+1))
         print("Validation Accuracy = {:.3f}".format(validation_accuracy))
         print()
