@@ -70,7 +70,7 @@ Next, in the fifth, sixth, and seventh code cells, I handled data augmentation w
 
 I wanted to handle the data augmentation before the image preprocessing so that I could preprocess all the images at once.
 
-Finally, in the eighth code cell, I converted the images to grayscale and ran min-max scaling on them.  In some of my earlier versions I was using the RGB images, but thought that I might be making it too complicated.  I thought that since signs should be recognizable mostly by their shape and symbols and in varying lighting conditions that it would better to try to learn them as normalized grayscale.
+Finally, in the eighth code cell, I converted the images to grayscale, ran histogram equalization, and ran min-max scaling on them.  In some of my earlier versions I was using the RGB images, but thought that I might be making it too complicated.  I thought that since signs should be recognizable mostly by their shape and symbols and in varying lighting conditions that it would better to try to learn them as normalized grayscale.
 
 Here is an example of a traffic sign image before and after grayscaling.
 ![Random Image Before Grayscaling][image2]
@@ -112,19 +112,19 @@ My final model consisted of the following layers:
 |:---------------------:|:---------------------------------------------:| 
 | Input         		| 32x32x1 normalized grayscale image  			| 
 | Convolution 5x5     	| 1x1 stride, valid padding, outputs 28x28x9 	|
-| RELU					|												|
+| ELU					|												|
 | Dropout				| Using convolutional keep probablity 			|
 | Max pooling	      	| 2x2 stride,  outputs 14x14x9  				|
 | Convolution 5x5     	| 1x1 stride, valid padding, outputs 10x10x24 	|
-| RELU					|												|
+| ELU					|												|
 | Dropout				| Using convolutional keep probablity 			|
 | Max pooling   		| 2x2 stride,  outputs 5x5x24   				|
 | Flatten       	    | outputs 600  									|
 | Fully connected		| outputs 180 									|
-| RELU					|												|
+| ELU					|												|
 | Dropout				|Using keep probablity              			|
 | Fully connected		| outputs 126 									|
-| RELU					|												|
+| ELU					|												|
 | Dropout				|Using keep probablity              			|
 | Fully connected		| outputs 43 									|
  
@@ -132,7 +132,7 @@ My final model consisted of the following layers:
 
 ####4. Describe how, and identify where in your code, you trained your model. The discussion can include the type of optimizer, the batch size, number of epochs and any hyperparameters such as learning rate.
 
-The code for training the model is primarily located in the eleventh cell of the ipython notebook with a few parameters defined earlier in the tenth cell. I trained the model in batches of size 128 for 40 epochs.  I used mostly the same training method used in the LeNet lab, using softmax cross entropy as the basis for calculating the loss, and minimizing the loss using the AdamOptimizer.  However, I supplemented the loss operation by adding a L2 Regularization calculation to the cross entropy when reducing the mean.  I added in the L2 Regularization in order to penalize high weights to prevent overfitting.
+The code for training the model is primarily located in the eleventh cell of the ipython notebook with a few parameters defined earlier in the tenth cell. I trained the model in batches of size 128 for 40 epochs.  I used mostly the same training method used in the LeNet lab, using softmax cross entropy as the basis for calculating the loss, and minimizing the loss using the AdamOptimizer.  However, I used ELU for activation instead of RELU, and I supplemented the loss operation by adding a L2 Regularization calculation to the cross entropy when reducing the mean.  I decided to try The ELU (Exponential Linear Unit) base on a paper I was referred to which suggested that ELUs can be faster and provide higher accuracy than RELUs.  I added in the L2 Regularization in order to penalize high weights to prevent overfitting.
 
 For the random generation of weights and biases I used 0 for mu and 0.1 for sigma. - it made sense to keep the starting weights small since I didn't want large weights causing overfitting on any particular feature. I used a learning rate of 0.001 and a beta value for L2 Regularization also of 0.001.
 
@@ -142,9 +142,9 @@ For the random generation of weights and biases I used 0 for mu and 0.1 for sigm
 The code for calculating the training and validation accuracy of the model is located in the eleventh cell of the Ipython notebook.  The code for calculating the test accuracy is in the twelfth cell.
 
 My final model results were:
-* training set accuracy of 98.3%
-* validation set accuracy of 95.4% 
-* test set accuracy of 93.7
+* training set accuracy of 98.0%
+* validation set accuracy of 95.6% 
+* test set accuracy of 92.8
 
 If an iterative approach was chosen:
 * What was the first architecture that was tried and why was it chosen?
@@ -203,75 +203,75 @@ Here are the results of the prediction:
 
 | Image			        |     Prediction	        					| 
 |:---------------------:|:---------------------------------------------:| 
-| No Stopping      		| Keep Right   									| 
+| No Stopping      		| Road work   									| 
 | 30 km/h     			| 20 km/h 										|
 | 60 km/h				| 20 km/h										|
-| Children Crossing		| Bumpy Road					 				|
+| Children Crossing		| Road narrows on the right		 				|
 | Stop      			| Stop              							|
 
 
-The model was able to correctly guess 1 of the 5 traffic signs, which gives an accuracy of 20%. This does not compare favorably to the accuracy on the test set of 93.7%
-On the 4 signs that the model got wrong I can see how the predictions are similar to the correct sign.  Coupled with the test set accuracy of 93.7%, it suggests that my model was a bit overfitted to the training data.  In addition to tweaking some parameters which help prevent overfitting such as L2's beta and the dropout keep probabilities, I also think that some things I could try to improve the model might be to increase the the layer widths to capture more detail and possibly to make my convolutional filter larger to capture more features together (in case some of the missed predictions are a case of not seeing the forest for the trees).
+The model was able to correctly guess 1 of the 5 traffic signs, which gives an accuracy of 20%. This does not compare favorably to the accuracy on the test set of 92.8%
+On the 4 signs that the model got wrong I can see how the predictions are similar to the correct sign.  Coupled with the test set accuracy of 92.8%, it suggests that my model was a bit overfitted to the training data.  In addition to tweaking some parameters which help prevent overfitting such as L2's beta and the dropout keep probabilities, I also think that some things I could try to improve the model might be to increase the the layer widths to capture more detail and possibly to make my convolutional filter larger to capture more features together (in case some of the missed predictions are a case of not seeing the forest for the trees).
 
 ####3. Describe how certain the model is when predicting on each of the five new images by looking at the softmax probabilities for each prediction and identify where in your code softmax probabilities were outputted. Provide the top 5 softmax probabilities for each image along with the sign type of each probability. (OPTIONAL: as described in the "Stand Out Suggestions" part of the rubric, visualizations can also be provided such as bar charts)
 
 The code for analyzing performance on my final model is located in the fifteenth and sixteenth cells of the Ipython notebook.
 
-None of my images, even the correctly predicted Stop sign, had very sure prediction based on how close in value the top 5 logit values were for each sign.  Out of the four that were predicted incorrectly, at least for Children Crossing, the correct sign was the third choice.
+Based on the probabilities for each sign, it seems that generally speaking, the predictions were pretty certain even when they were wrong.  Out of the four that were predicted incorrectly, at least for Children Crossing, the correct sign was the second choice even though the model was the most certain of it's wrong choice.
 
-For the No Stopping sign, the top 5 logit values and associated predictions were:
+For the No Stopping sign, the top 5 probability values and associated predictions were:
 
-| Logit Value         	|     Prediction	        					| 
+| Probability         	|     Prediction	        					| 
 |:---------------------:|:---------------------------------------------:| 
-| 7.02620983   			| Keep right   									| 
-| 4.81956053			| Double curve 									|
-| 4.6329937				| Roundabout mandatory							|
-| 4.28303289   			| Priority road					 				|
-| 4.05985498    	    | Road narrows on the right						|
+| 61.3      			| Road work             						| 
+| 14.6      			| Priority road     							|
+| 11.3  				| Bumpy road        							|
+| 8.9       			| Keep right        			 				|
+| 3.5           	    | Bicycles crossing     						|
 
 
-For the 30 km/h sign, the top 5 logit values and associated predictions were:
+For the 30 km/h sign, the top 5 probability values and associated predictions were:
 
-| Logit Value         	|     Prediction	        					| 
+| Probability         	|     Prediction	        					| 
 |:---------------------:|:---------------------------------------------:| 
-| 13.71474838  			| Speed limit (20km/h)							| 
-| 9.79750919			| Speed limit (70km/h)							|
-| 8.44599438			| Dangerous curve to the left					|
-| 8.10137272   			| Double curve					 				|
-| 7.11165714    	    | General caution       						|
+| 77.8      			| Speed limit (20km/h)							| 
+| 18.1      			| Speed limit (70km/h)							|
+| 2.5       			| Stop                      					|
+| 0.62       			| General caution				 				|
+| 0.61           	    | Speed limit (120km/h)  						|
 
 
-For the 60 km/h sign, the top 5 logit values and associated predictions were:
+For the 60 km/h sign, the top 5 probability values and associated predictions were:
 
-| Logit Value         	|     Prediction	        					| 
+| Probability         	|     Prediction	        					| 
 |:---------------------:|:---------------------------------------------:| 
-| 11.92491913  			| Speed limit (20km/h)							| 
-| 9.28515539			| Roundabout mandatory							|
-| 7.50672483			| Keep left                 					|
-| 6.37186432   			| End of speed limit (80km/h)	 				|
-| 5.51872015    	    | Double curve          						|
+| 78.2      			| Speed limit (20km/h)							| 
+| 17.2       			| Double curve      							|
+| 1.5       			| Road narrows on the right    					|
+| 0.58      			| Speed limit (120km/h)      	 				|
+| 0.47          	    | Wild animals crossing    						|
 
 
-For the Children Crossing sign, the top 5 logit values and associated predictions were:
+For the Children Crossing sign, the top 5 probability values and associated predictions were:
 
-| Logit Value         	|     Prediction	        					| 
+| Probability         	|     Prediction	        					| 
 |:---------------------:|:---------------------------------------------:| 
-| 16.41698265  			| Bumpy road   									| 
-| 15.53512573			| Ahead only 									|
-| 14.40849113			| Children crossing 							|
-| 13.88892269  			| Bicycles crossing				 				|
-| 12.80282784    	    | Road work             						|
+| 99.9      			| Road narrows on the right						| 
+| 0.0298    			| Children crossing								|
+| 0.0078    			| Bicycles crossing 							|
+| 0.0069    			| Beware of ice/snow			 				|
+| 0.0011        	    | Pedestrians             						|
 
 
-For the Stop sign, the top 5 logit values and associated predictions were:
+For the Stop sign, the top 5 probability values and associated predictions were:
 
-| Logit Value         	|     Prediction	        					| 
+| Probability         	|     Prediction	        					| 
 |:---------------------:|:---------------------------------------------:| 
-| 17.69902802  			| Stop      									| 
-| 16.47834015			| General caution								|
-| 13.92311096			| Speed limit (70km/h) 							|
-| 12.51802444  			| Yield         				 				|
-| 11.63380051    	    | Speed limit (20km/h)     						|
+| 74.2      			| Stop      									| 
+| 22.4      			| General caution								|
+| 2.1       			| Speed limit (20km/h) 							|
+| 1.0       			| Speed limit (70km/h)  		 				|
+| 0.056         	    | Speed limit (120km/h)    						|
 
 
 
